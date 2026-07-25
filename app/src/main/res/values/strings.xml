@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Adzan</string>
     <string name="enable_location">Enable Location</string>
+    <string name="get_prayer_times">Get Prayer Times</string>
+    <string name="city_hint">Enter city name</string>
     <string name="prayer_times">Prayer Times</string>
     <string name="location_permission_denied">Location permission denied</string>
     <string name="location_service_started">Location service started</string>

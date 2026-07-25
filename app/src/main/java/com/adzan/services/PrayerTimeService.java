@@ -70,7 +70,7 @@ public class PrayerTimeService extends Service {
 
             Intent intent = new Intent(this, PrayerTimeReceiver.class);
             intent.putExtra("prayer_name", prayerName);
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(this, prayerName.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, prayerName.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
         }
@@ -94,7 +94,7 @@ public class PrayerTimeService extends Service {
             
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Request permission
+                Log.w("PrayerTimeReceiver", "POST_NOTIFICATIONS permission not granted");
                 return;
             }
             notificationManager.notify(1, builder.build());

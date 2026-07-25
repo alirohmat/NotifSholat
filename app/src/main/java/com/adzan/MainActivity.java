@@ -1,20 +1,26 @@
 package com.adzan;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.adzan.services.PrayerTimeService;
+
 public class MainActivity extends AppCompatActivity {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
     private TextView prayerTimeText;
-    private Button enableLocationButton;
+    private EditText cityEditText;
+    private Button getPrayerTimesButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,36 +28,44 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         prayerTimeText = findViewById(R.id.prayerTimeText);
-        enableLocationButton = findViewById(R.id.enableLocationButton);
+        cityEditText = findViewById(R.id.cityEditText);
+        getPrayerTimesButton = findViewById(R.id.enableLocationButton);
 
-        enableLocationButton.setOnClickListener(v -> requestLocationPermission());
+        getPrayerTimesButton.setOnClickListener(v -> {
+            String cityName = cityEditText.getText().toString().trim();
+            if (cityName.isEmpty()) {
+                Toast.makeText(this, "Please enter a city name", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            fetchPrayerTimes(cityName);
+        });
     }
 
-    private void requestLocationPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    LOCATION_PERMISSION_REQUEST_CODE);
-        } else {
-            startLocationService();
+    private void fetchPrayerTimes(String cityName) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        2);
+                return;
+            }
         }
+
+        Intent intent = new Intent(this, PrayerTimeService.class);
+        intent.putExtra("city_name", cityName);
+        startService(intent);
+        Toast.makeText(this, "Fetching prayer times for " + cityName, Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startLocationService();
-            } else {
-                Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
+        if (requestCode == 2 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            String cityName = cityEditText.getText().toString().trim();
+            if (!cityName.isEmpty()) {
+                fetchPrayerTimes(cityName);
             }
         }
-    }
-
-    private void startLocationService() {
-        Toast.makeText(this, "Location service started", Toast.LENGTH_SHORT).show();
-        // TODO: Start location service and fetch prayer times
     }
 }
