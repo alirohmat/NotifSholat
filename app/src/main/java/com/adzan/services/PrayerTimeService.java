@@ -33,12 +33,16 @@ public class PrayerTimeService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        double latitude = intent.getDoubleExtra("latitude", 0);
-        double longitude = intent.getDoubleExtra("longitude", 0);
+        String cityName = intent.getStringExtra("city_name");
 
         new Thread(() -> {
             try {
-                String prayerTimesJson = ApiUtils.getPrayerTimes(latitude, longitude);
+                String cityId = ApiUtils.searchCityByName(cityName);
+                if (cityId == null) {
+                    Log.e(TAG, "City not found: " + cityName);
+                    return;
+                }
+                String prayerTimesJson = ApiUtils.getPrayerTimes(cityId);
                 JSONObject prayerTimes = new JSONObject(prayerTimesJson);
                 schedulePrayerTimeNotifications(prayerTimes);
             } catch (IOException | JSONException e) {
