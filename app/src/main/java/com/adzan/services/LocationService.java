@@ -76,16 +76,17 @@ public class LocationService extends Service implements LocationListener {
         currentLocation = location;
         Log.d(TAG, "Location updated: " + location.getLatitude() + ", " + location.getLongitude());
 
-        String cityName = getCityName(location.getLatitude(), location.getLongitude());
-        if (cityName != null) {
-        Intent intent = new Intent(this, PrayerTimeService.class);
-        intent.putExtra("city_name", cityName);
-        startService(intent);
-        stopSelf();
-
-        } else {
-            Log.w(TAG, "City name not found for the current location.");
-        }
+        new Thread(() -> {
+            String cityName = getCityName(location.getLatitude(), location.getLongitude());
+            if (cityName != null && !cityName.trim().isEmpty()) {
+                Intent intent = new Intent(LocationService.this, PrayerTimeService.class);
+                intent.putExtra("city_name", cityName);
+                startService(intent);
+                stopSelf();
+            } else {
+                Log.w(TAG, "City name not found for the current location: " + location.getLatitude() + ", " + location.getLongitude());
+            }
+        }).start();
     }
 
     private String getCityName(double latitude, double longitude) {

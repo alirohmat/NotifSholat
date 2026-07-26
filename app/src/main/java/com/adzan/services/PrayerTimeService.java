@@ -30,24 +30,34 @@ public class PrayerTimeService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent == null) {
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+
         String cityName = intent.getStringExtra("city_name");
         String statusAction = intent.getStringExtra("status_receiver_action");
+        
+        if (cityName == null || cityName.trim().isEmpty() || statusAction == null) {
+            Log.e(TAG, "Invalid intent extras: cityName=" + cityName + ", statusAction=" + statusAction);
+            if (statusAction != null) {
+                sendBroadcastStatus(statusAction, "error", getString(R.string.city_name_empty), null, null);
+            }
+            stopSelf();
+            return START_NOT_STICKY;
+        }
         
         sendBroadcastStatus(statusAction, "loading", null, null, null);
 
         new Thread(() -> {
             try {
-                if (cityName == null || cityName.trim().isEmpty()) {
-                    sendBroadcastStatus(statusAction, "error", "Nama kota kosong", null, null);
-                    return;
-                }
-                String cityId = ApiUtils.searchCityByName(cityName);
+                String cityId = ApiUtils.searchCityByName(this, cityName);
                 if (cityId == null) {
                     Log.e(TAG, "City not found: " + cityName);
-                    sendBroadcastStatus(statusAction, "error", "Kota tidak ditemukan: " + cityName, null, null);
+                    sendBroadcastStatus(statusAction, "error", getString(R.string.city_not_found) + cityName, null, null);
                     return;
                 }
-                String prayerTimesJson = ApiUtils.getPrayerTimes(cityId);
+                String prayerTimesJson = ApiUtils.getPrayerTimes(this, cityId);
                 JSONObject prayerTimes = new JSONObject(prayerTimesJson);
                 
                 JSONObject jadwal = prayerTimes.getJSONObject("data").getJSONObject("jadwal");

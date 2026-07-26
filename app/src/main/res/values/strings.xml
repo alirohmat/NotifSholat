@@ -13,4 +13,16 @@
     <string name="asr">Asr</string>
     <string name="maghrib">Maghrib</string>
     <string name="isha">Isha</string>
+    
+    <!-- Loading and status messages -->
+    <string name="loading_message">Memuat...</string>
+    <string name="error_prefix">Error: </string>
+    <string name="city_name_empty">Nama kota kosong</string>
+    <string name="city_not_found">Kota tidak ditemukan: </string>
+    <string name="location_activating">Mengaktifkan deteksi lokasi...</string>
+    <string name="prayer_times_title">Waktu Sholat %s:\n%s</string>
+    
+    <!-- Notification messages -->
+    <string name="notification_prayer_time">It\'s time for %s</string>
+    <string name="notification_prayer_text">Time to pray.</string>
 </resources>

@@ -68,15 +68,15 @@ public class MainActivity extends AppCompatActivity {
                 String message = intent.getStringExtra("message");
                 
                 if ("loading".equals(status)) {
-                    prayerTimeText.setText("Memuat...");
+                    prayerTimeText.setText(getString(R.string.loading_message));
                     prayerTimeText.setTextColor(getResources().getColor(android.R.color.holo_blue_dark));
                 } else if ("success".equals(status)) {
                     String city = intent.getStringExtra("city");
                     String times = intent.getStringExtra("prayer_times");
-                    prayerTimeText.setText(String.format("Waktu Sholat %s:\n%s", city, times));
+                    prayerTimeText.setText(getString(R.string.prayer_times_title, city, times));
                     prayerTimeText.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
                 } else if ("error".equals(status)) {
-                    prayerTimeText.setText("Error: " + message);
+                    prayerTimeText.setText(getString(R.string.error_prefix) + message);
                     prayerTimeText.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
                 }
             }
@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         
-        Toast.makeText(this, "Mengaktifkan deteksi lokasi...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.location_activating, Toast.LENGTH_SHORT).show();
         
         Intent intent = new Intent(this, LocationService.class);
         startService(intent);

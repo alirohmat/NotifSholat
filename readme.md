@@ -2,21 +2,21 @@
 
 ## Prioritas Tinggi (Critical Fixes)
 
-1. **Fix LocationService memory leak**
+1. [x] **Fix LocationService memory leak**
    - Hapus location updates di `onDestroy()`
    - Stop service dengan benar setelah tidak dibutuhkan lagi
 
-2. **Fix MainActivity.onDestroy() crash**
+2. [x] **Fix MainActivity.onDestroy() crash**
    - Bungkus `unregisterReceiver()` dengan try-catch atau `LocalBroadcastManager`
 
-3. **Fix city name mismatch**
+3. [x] **Fix city name mismatch**
    - LocationService kirim `getLocality()` tapi PrayerTimeService cari kota pakai `lokasi` seperti "Bukittinggi, Sumatra Barat"
    - Harus match substring kolom `lokasi` bukan nama kota murni
 
-4. **Fix syntax error PrayerTimeService.java:105**
+4. [x] **Fix syntax error PrayerTimeService.java:105**
    - Lengkapi semicolon pada PendingIntent line atau rapikan
 
-5. **Foreground service untuk PrayerTimeService**
+5. [x] **Foreground service untuk PrayerTimeService**
    - Android O+ butuh foreground service agar tidak dimatikan sistem
 
 ---
@@ -42,8 +42,8 @@
 
 ## Catatan Bug Minor Ditunda
 
-- `MainActivity` masih pakai `getResources().getColor(...)`; idealnya pindah ke `ContextCompat.getColor(...)` untuk kompatibilitas API lebih rapi.
-- `LocationService` masih bergantung pada `Geocoder` dan fallback lokasi manual; edge case lokasi kosong belum dibungkus lebih ketat.
+- [x] `MainActivity` masih pakai `getResources().getColor(...)`; idealnya pindah ke `ContextCompat.getColor(...)` untuk kompatibilitas API lebih rapi.
+- [x] `LocationService` masih bergantung pada `Geocoder` dan fallback lokasi manual; edge case lokasi kosong belum dibungkus lebih ketat.
 - `PrayerTimeService` masih pakai `Thread` mentah; bisa diganti `WorkManager` kalau butuh eksekusi lebih tahan proses mati.
 - `ApiUtils.searchCityByName()` masih pakai substring match; hasil bisa false positive untuk nama kota mirip.
 
