@@ -47,9 +47,9 @@ public class ApiUtils {
         Calendar calendar = Calendar.getInstance();
         int year = calendar.get(Calendar.YEAR);
         int month = calendar.get(Calendar.MONTH) + 1;
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
 
-        String url = BASE_URL + "/sholat/jadwal/" + cityId + "/" + year + "/" + month + "/" + day;
+        String period = year + "-" + month;
+        String url = BASE_URL + "/sholat/jadwal/" + cityId + "/" + period;
 
         Request request = new Request.Builder()
                 .url(url)

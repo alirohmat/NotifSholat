@@ -34,23 +34,51 @@ public class PrayerTimeService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String cityName = intent.getStringExtra("city_name");
+        String statusAction = intent.getStringExtra("status_receiver_action");
+        
+        sendBroadcastStatus(statusAction, "loading", null, null, null);
 
         new Thread(() -> {
             try {
                 String cityId = ApiUtils.searchCityByName(cityName);
                 if (cityId == null) {
                     Log.e(TAG, "City not found: " + cityName);
+                    sendBroadcastStatus(statusAction, "error", "Kota tidak ditemukan: " + cityName, null, null);
                     return;
                 }
                 String prayerTimesJson = ApiUtils.getPrayerTimes(cityId);
                 JSONObject prayerTimes = new JSONObject(prayerTimesJson);
+                
+                JSONObject jadwal = prayerTimes.getJSONObject("data").getJSONObject("jadwal");
+                StringBuilder prayerTimesText = new StringBuilder();
+                String[] prayerNames = {"subuh", "dzuhur", "ashar", "maghrib", "isya"};
+                for (String prayerName : prayerNames) {
+                    prayerTimesText.append(prayerName.toUpperCase())
+                                   .append(": ")
+                                   .append(jadwal.getString(prayerName))
+                                   .append("\n");
+                }
+                
                 schedulePrayerTimeNotifications(prayerTimes);
+                        sendBroadcastStatus(statusAction, "success", null, cityName, prayerTimesText.toString());
             } catch (IOException | JSONException e) {
                 Log.e(TAG, "Error fetching prayer times: " + e.getMessage());
+                sendBroadcastStatus(statusAction, "error", e.getMessage(), null, null);
             }
         }).start();
 
         return START_NOT_STICKY;
+    }
+
+    private void sendBroadcastStatus(String action, String status, String message, String city, String prayerTimes) {
+        if (action == null) return;
+        
+        Intent intent = new Intent(action);
+        intent.putExtra("status", status);
+        intent.putExtra("message", message);
+        intent.putExtra("city", city);
+        intent.putExtra("prayer_times", prayerTimes);
+        sendBroadcast(intent);
     }
 
     private void schedulePrayerTimeNotifications(JSONObject prayerTimes) throws JSONException {

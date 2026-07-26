@@ -1,10 +1,16 @@
 package com.adzan;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -14,13 +20,34 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.adzan.services.LocationService;
 import com.adzan.services.PrayerTimeService;
 
 public class MainActivity extends AppCompatActivity {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
+    private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 2;
+    private static final String PRAYER_TIME_STATUS_ACTION = "com.adzan.PRAYER_TIME_STATUS";
+    
     private TextView prayerTimeText;
     private EditText cityEditText;
     private Button getPrayerTimesButton;
+    private LocationService locationService;
+    private boolean isBound = false;
+    private BroadcastReceiver statusReceiver;
+
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            LocationService.LocalBinder binder = (LocationService.LocalBinder) service;
+            locationService = binder.getService();
+            isBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            isBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,14 +58,63 @@ public class MainActivity extends AppCompatActivity {
         cityEditText = findViewById(R.id.cityEditText);
         getPrayerTimesButton = findViewById(R.id.enableLocationButton);
 
+        setupStatusReceiver();
         getPrayerTimesButton.setOnClickListener(v -> {
             String cityName = cityEditText.getText().toString().trim();
             if (cityName.isEmpty()) {
-                Toast.makeText(this, "Please enter a city name", Toast.LENGTH_SHORT).show();
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                            LOCATION_PERMISSION_REQUEST_CODE);
+                } else {
+                    enableLocationBasedPrayer();
+                }
                 return;
             }
             fetchPrayerTimes(cityName);
         });
+    }
+
+    private void setupStatusReceiver() {
+        statusReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String status = intent.getStringExtra("status");
+                String message = intent.getStringExtra("message");
+                
+                if ("loading".equals(status)) {
+                    prayerTimeText.setText("Memuat...");
+                    prayerTimeText.setTextColor(getResources().getColor(android.R.color.holo_blue_dark));
+                } else if ("success".equals(status)) {
+                    String city = intent.getStringExtra("city");
+                    String times = intent.getStringExtra("prayer_times");
+                    prayerTimeText.setText(String.format("Waktu Sholat %s:\n%s", city, times));
+                    prayerTimeText.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
+                } else if ("error".equals(status)) {
+                    prayerTimeText.setText("Error: " + message);
+                    prayerTimeText.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+                }
+            }
+        };
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(statusReceiver, new IntentFilter(PRAYER_TIME_STATUS_ACTION), Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(statusReceiver, new IntentFilter(PRAYER_TIME_STATUS_ACTION));
+        }
+    }
+
+    private void enableLocationBasedPrayer() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        
+        Toast.makeText(this, "Mengaktifkan deteksi lokasi...", Toast.LENGTH_SHORT).show();
+        
+        Intent intent = new Intent(this, LocationService.class);
+        startService(intent);
     }
 
     private void fetchPrayerTimes(String cityName) {
@@ -47,25 +123,41 @@ public class MainActivity extends AppCompatActivity {
                     != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        2);
+                        NOTIFICATION_PERMISSION_REQUEST_CODE);
                 return;
             }
         }
 
         Intent intent = new Intent(this, PrayerTimeService.class);
         intent.putExtra("city_name", cityName);
+        intent.putExtra("status_receiver_action", PRAYER_TIME_STATUS_ACTION);
         startService(intent);
-        Toast.makeText(this, "Fetching prayer times for " + cityName, Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 2 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE && grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            enableLocationBasedPrayer();
+        } else if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE && grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             String cityName = cityEditText.getText().toString().trim();
             if (!cityName.isEmpty()) {
                 fetchPrayerTimes(cityName);
             }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (isBound) {
+            unbindService(serviceConnection);
+            isBound = false;
+        }
+        if (statusReceiver != null) {
+            unregisterReceiver(statusReceiver);
         }
     }
 }
