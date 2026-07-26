@@ -9,10 +9,15 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
 
 public class ApiUtils {
     private static final String BASE_URL = "https://api.myquran.com/v3";
-    private static final OkHttpClient client = new OkHttpClient();
+    private static final OkHttpClient client = new OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build();
 
     public static String searchCityByName(String cityName) throws IOException, JSONException {
         String url = BASE_URL + "/sholat/kota/semua";
@@ -30,7 +35,7 @@ public class ApiUtils {
             JSONObject jsonObject = new JSONObject(jsonResponse);
             JSONArray cities = jsonObject.getJSONArray("data");
 
-            String searchTerm = cityName.toLowerCase();
+            String searchTerm = cityName.trim().toLowerCase();
             for (int i = 0; i < cities.length(); i++) {
                 JSONObject city = cities.getJSONObject(i);
                 String cityFullName = city.getString("lokasi").toLowerCase();

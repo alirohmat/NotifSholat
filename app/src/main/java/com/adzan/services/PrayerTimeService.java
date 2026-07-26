@@ -2,7 +2,6 @@ package com.adzan.services;
 
 import android.Manifest;
 import android.app.AlarmManager;
-import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -25,8 +24,6 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
 
 public class PrayerTimeService extends Service {
     private static final String TAG = "PrayerTimeService";
@@ -40,6 +37,10 @@ public class PrayerTimeService extends Service {
 
         new Thread(() -> {
             try {
+                if (cityName == null || cityName.trim().isEmpty()) {
+                    sendBroadcastStatus(statusAction, "error", "Nama kota kosong", null, null);
+                    return;
+                }
                 String cityId = ApiUtils.searchCityByName(cityName);
                 if (cityId == null) {
                     Log.e(TAG, "City not found: " + cityName);
@@ -60,7 +61,7 @@ public class PrayerTimeService extends Service {
                 }
                 
                 schedulePrayerTimeNotifications(prayerTimes);
-                        sendBroadcastStatus(statusAction, "success", null, cityName, prayerTimesText.toString());
+                sendBroadcastStatus(statusAction, "success", null, cityName, prayerTimesText.toString());
             } catch (IOException | JSONException e) {
                 Log.e(TAG, "Error fetching prayer times: " + e.getMessage());
                 sendBroadcastStatus(statusAction, "error", e.getMessage(), null, null);
@@ -102,7 +103,8 @@ public class PrayerTimeService extends Service {
 
             Intent intent = new Intent(this, PrayerTimeReceiver.class);
             intent.putExtra("prayer_name", prayerName);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, prayerName.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            int requestCode = (prayerName + ":" + calendar.get(Calendar.YEAR) + ":" + calendar.get(Calendar.DAY_OF_YEAR)).hashCode();
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(this, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
         }

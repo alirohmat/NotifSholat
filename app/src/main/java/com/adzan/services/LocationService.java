@@ -78,9 +78,11 @@ public class LocationService extends Service implements LocationListener {
 
         String cityName = getCityName(location.getLatitude(), location.getLongitude());
         if (cityName != null) {
-            Intent intent = new Intent(this, PrayerTimeService.class);
-            intent.putExtra("city_name", cityName);
-            startService(intent);
+        Intent intent = new Intent(this, PrayerTimeService.class);
+        intent.putExtra("city_name", cityName);
+        startService(intent);
+        stopSelf();
+
         } else {
             Log.w(TAG, "City name not found for the current location.");
         }

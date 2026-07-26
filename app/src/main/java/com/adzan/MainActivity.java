@@ -29,7 +29,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView prayerTimeText;
     private EditText cityEditText;
     private Button getPrayerTimesButton;
+    private String notificationPermissionPendingCity;
     private BroadcastReceiver statusReceiver;
+    private boolean receiverRegistered;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
         prayerTimeText = findViewById(R.id.prayerTimeText);
         cityEditText = findViewById(R.id.cityEditText);
-        getPrayerTimesButton = findViewById(R.id.enableLocationButton);
+        getPrayerTimesButton = findViewById(R.id.getPrayerTimesButton);
 
         setupStatusReceiver();
         getPrayerTimesButton.setOnClickListener(v -> {
@@ -85,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             registerReceiver(statusReceiver, new IntentFilter(PRAYER_TIME_STATUS_ACTION));
         }
+        receiverRegistered = true;
     }
 
     private void enableLocationBasedPrayer() {
@@ -103,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionPendingCity = cityName;
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.POST_NOTIFICATIONS},
                         NOTIFICATION_PERMISSION_REQUEST_CODE);
@@ -124,9 +128,9 @@ public class MainActivity extends AppCompatActivity {
             enableLocationBasedPrayer();
         } else if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE && grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            String cityName = cityEditText.getText().toString().trim();
-            if (!cityName.isEmpty()) {
-                fetchPrayerTimes(cityName);
+            if (notificationPermissionPendingCity != null && !notificationPermissionPendingCity.isEmpty()) {
+                fetchPrayerTimes(notificationPermissionPendingCity);
+                notificationPermissionPendingCity = null;
             }
         }
     }
@@ -134,8 +138,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (statusReceiver != null) {
+        if (receiverRegistered && statusReceiver != null) {
             unregisterReceiver(statusReceiver);
+            receiverRegistered = false;
         }
     }
 }
