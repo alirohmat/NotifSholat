@@ -2,11 +2,9 @@ package com.adzan;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,23 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView prayerTimeText;
     private EditText cityEditText;
     private Button getPrayerTimesButton;
-    private LocationService locationService;
-    private boolean isBound = false;
     private BroadcastReceiver statusReceiver;
-
-    private final ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            LocationService.LocalBinder binder = (LocationService.LocalBinder) service;
-            locationService = binder.getService();
-            isBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName arg0) {
-            isBound = false;
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -152,10 +134,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (isBound) {
-            unbindService(serviceConnection);
-            isBound = false;
-        }
         if (statusReceiver != null) {
             unregisterReceiver(statusReceiver);
         }

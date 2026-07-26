@@ -11,6 +11,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -24,6 +25,13 @@ public class LocationService extends Service implements LocationListener {
     private static final String TAG = "LocationService";
     private LocationManager locationManager;
     private Location currentLocation;
+    private final IBinder binder = new LocalBinder();
+
+    public class LocalBinder extends Binder {
+        public LocationService getService() {
+            return LocationService.this;
+        }
+    }
 
     @Override
     public void onCreate() {
@@ -111,7 +119,7 @@ public class LocationService extends Service implements LocationListener {
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return binder;
     }
 
     @Override
